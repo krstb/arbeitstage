@@ -1,7 +1,7 @@
 {
   "short_name": "Arbeitstage",
-  "name": "Arbeitstage Rechner Bayern",
-  "description": "Berechnung der verbleibenden Nettoarbeitstage bis 2031",
+  "name": "Arbeitstage bis zur Rente",
+  "description": "Verbleibenden Nettoarbeitstage bis 2031",
   "icons": [
     {
       "src": "icon-192.png",
