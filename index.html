@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbeitstage</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        #debug-section {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-4 space-y-6">
+
+    <div class="max-w-md w-full card p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Arbeitstage v2</h1>
+        <p class="text-center text-sm text-gray-500 mb-4">Region: Bayern (inkl. Augsburg)<br>Urlaub: 30 Tage/Jahr | 24.12. & 31.12. = 0,5</p>
+        
+        <div class="space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <span class="text-gray-600">Ziel Datum:</span>
+                <span class="font-semibold text-blue-600">01.04.2031</span>
+            </div>
+            
+            <div class="bg-blue-50 p-6 rounded-lg text-center">
+                <div id="result-days" class="text-5xl font-black text-blue-700">--</div>
+                <div class="text-sm text-blue-600 mt-2 font-medium uppercase tracking-wide">Nettoarbeitstage verbleibend</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="bg-gray-50 p-3 rounded text-center">
+                    <div id="holiday-count" class="font-bold text-gray-700">--</div>
+                    <div class="text-gray-500">Feiertage (Mo-Fr)</div>
+                </div>
+                <div class="bg-gray-50 p-3 rounded text-center">
+                    <div id="vacation-days" class="font-bold text-gray-700">--</div>
+                    <div class="text-gray-500">Urlaubstage (Gesamt)</div>
+                </div>
+            </div>
+
+            <div class="mt-6 text-xs text-gray-400 leading-relaxed italic">
+                * Berechnung: Montag-Freitag, abzüglich bayerischer Feiertage, Augsburger Friedensfest, halbe Tage am 24./31.12. und 30 Urlaubstage/Jahr.
+            </div>
+        </div>
+
+        <button id="toggle-debug" onclick="toggleDebug()" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors duration-200">
+            Berechnung einblenden
+        </button>
+    </div>
+
+    <div id="debug-section" class="max-w-4xl w-full card p-6 overflow-x-auto">
+        <h2 class="text-lg font-bold text-gray-700 mb-4">Berechnungs-Details (Debug)</h2>
+        <table class="w-full text-sm text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="p-2 border">Jahr</th>
+                    <th class="p-2 border text-center">Werktage (Mo-Fr)</th>
+                    <th class="p-2 border text-center text-red-600">Feiertage*</th>
+                    <th class="p-2 border text-center text-orange-600">Urlaub (Abzug)</th>
+                    <th class="p-2 border text-center font-bold text-green-700">Netto-Tage</th>
+                </tr>
+            </thead>
+            <tbody id="debug-body">
+            </tbody>
+        </table>
+        <div class="mt-2 flex justify-between text-[10px] text-gray-400">
+            <span>* Inklusive 0,5 Abzug für 24.12. und 31.12. sofern Werktag.</span>
+            <span>Urlaub: 30 Tage pro vollem Jahr (anteilig für 2025/2031).</span>
+        </div>
+    </div>
+
+    <script>
+        // PWA Service Worker Registrierung
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Register Error:', err));
+            });
+        }
+
+        // Funktion zum Ein-/Ausblenden der Debug-Tabelle
+        function toggleDebug() {
+            const section = document.getElementById('debug-section');
+            const button = document.getElementById('toggle-debug');
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                button.innerText = 'Berechnung ausblenden';
+            } else {
+                section.style.display = 'none';
+                button.innerText = 'Berechnung einblenden';
+            }
+        }
+
+        function getEasterSunday(year) {
+            const a = year % 19;
+            const b = Math.floor(year / 100);
+            const c = year % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(year, month - 1, day);
+        }
+
+        function getHolidays(year) {
+            const easter = getEasterSunday(year);
+            const addDays = (date, days) => {
+                const res = new Date(date);
+                res.setDate(res.getDate() + days);
+                return res;
+            };
+
+            const hMap = {};
+            const fullHolidays = [
+                new Date(year, 0, 1), new Date(year, 0, 6), addDays(easter, -2),
+                addDays(easter, 1), new Date(year, 4, 1), addDays(easter, 39),
+                addDays(easter, 50), addDays(easter, 60), new Date(year, 7, 8),
+                new Date(year, 7, 15), new Date(year, 9, 3), new Date(year, 10, 1),
+                new Date(year, 11, 25), new Date(year, 11, 26)
+            ];
+
+            fullHolidays.forEach(d => { hMap[d.toDateString()] = 1.0; });
+            const h24 = new Date(year, 11, 24);
+            const h31 = new Date(year, 11, 31);
+            if (!hMap[h24.toDateString()]) hMap[h24.toDateString()] = 0.5;
+            if (!hMap[h31.toDateString()]) hMap[h31.toDateString()] = 0.5;
+            return hMap;
+        }
+
+        function calculate() {
+            const now = new Date();
+            const targetDate = new Date(2031, 3, 1); 
+            if (now > targetDate) { document.getElementById('result-days').innerText = "Ziel erreicht"; return; }
+
+            let totalHolidayAbzug = 0;
+            let tempDate = new Date(now);
+            const yearlyStats = {};
+
+            while (tempDate <= targetDate) {
+                const year = tempDate.getFullYear();
+                if (!yearlyStats[year]) {
+                    yearlyStats[year] = { brutto: 0, abzug: 0, calDays: 0, holidaysMap: getHolidays(year) };
+                }
+                yearlyStats[year].calDays++;
+                const dayOfWeek = tempDate.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    yearlyStats[year].brutto++;
+                    const abzug = yearlyStats[year].holidaysMap[tempDate.toDateString()] || 0;
+                    if (abzug > 0) {
+                        yearlyStats[year].abzug += abzug;
+                        totalHolidayAbzug += abzug;
+                    }
+                }
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+
+            const vacationPerYear = 30;
+            let totalVacationSum = 0;
+            let totalNettoSum = 0;
+            const debugBody = document.getElementById('debug-body');
+            debugBody.innerHTML = '';
+            
+            Object.keys(yearlyStats).sort().forEach(year => {
+                const stats = yearlyStats[year];
+                const isFullYear = (stats.calDays >= 365);
+                const yearlyVacation = isFullYear ? 30 : Math.floor((stats.calDays / 365.25) * vacationPerYear);
+                
+                totalVacationSum += yearlyVacation;
+                const yearlyNetto = stats.brutto - stats.abzug - yearlyVacation;
+                totalNettoSum += yearlyNetto;
+
+                debugBody.innerHTML += `
+                    <tr>
+                        <td class="p-2 border font-medium">${year}</td>
+                        <td class="p-2 border text-center">${stats.brutto}</td>
+                        <td class="p-2 border text-center text-red-600">${stats.abzug.toLocaleString('de-DE')}</td>
+                        <td class="p-2 border text-center text-orange-600">${yearlyVacation}</td>
+                        <td class="p-2 border text-center font-bold text-green-700">${yearlyNetto.toLocaleString('de-DE')}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('result-days').innerText = totalNettoSum.toLocaleString('de-DE');
+            document.getElementById('holiday-count').innerText = totalHolidayAbzug.toLocaleString('de-DE');
+            document.getElementById('vacation-days').innerText = totalVacationSum;
+        }
+
+        window.onload = calculate;
+    </script>
+</body>
+</html>
