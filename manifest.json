@@ -2,20 +2,23 @@
   "short_name": "Arbeitstage",
   "name": "Arbeitstage bis zur Rente",
   "description": "Verbleibenden Nettoarbeitstage bis 2031",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#000000",
+  "background_color": "#000000",
   "icons": [
     {
       "src": "icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     }
-  ],
-  "start_url": "index.html",
-  "background_color": "#f3f4f6",
-  "display": "standalone",
-  "theme_color": "#2563eb"
+  ]
 }
