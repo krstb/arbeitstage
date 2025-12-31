@@ -1,10 +1,7 @@
-const CACHE_NAME = 'arbeitstage-v1'; // Ändere v1 zu v2, v3 etc., um Updates zu erzwingen
+const CACHE_NAME = 'arbeitstage'; // Ändere v2 zu v3, v4 etc., um Updates zu erzwingen
 const ASSETS = [
   'index.html',
-  'manifest.json',
-  'icon-192.png',
-  'icon-512.png',
-  'https://cdn.tailwindcss.com' // WICHTIG: Ohne das ist die App offline unformatiert
+  'manifest.json'
 ];
 
 // Installation: Dateien in den Cache laden
@@ -14,7 +11,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS);
     })
   );
-  // Aktiviert den neuen Service Worker sofort
+  // Aktiviert den neuen Service Worker sofort, ohne auf das Schließen der App zu warten
   self.skipWaiting();
 });
 
