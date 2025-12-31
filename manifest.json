@@ -4,8 +4,8 @@
   "description": "Verbleibenden Nettoarbeitstage bis 2031",
   "start_url": "index.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#5D9EC6",
+  
+  "theme_color": "##0000000",
   "background_color": "#5D9EC6",
   "icons": [
     {
