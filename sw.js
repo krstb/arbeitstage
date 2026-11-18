@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arbeitstage-v1';
+const CACHE_NAME = 'arbeitstage-v2';
 const ASSETS = [
   'arbeitstage.html',
   'manifest.json',
@@ -6,7 +6,7 @@ const ASSETS = [
   'favicon.svg'
 ];
 
-// Installation: Dateien cachen
+// 1. Installation: Dateien beim ersten Start cachen
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Aktivierung: Alte Caches aufräumen
+// 2. Aktivierung: Alte Caches aufräumen
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -28,34 +28,28 @@ self.addEventListener('activate', (event) => {
   self.claim();
 });
 
-// Fetch-Event mit GitHub-Erreichbarkeitsprüfung
+// 3. Fetch-Event: Offline-First Strategie
 self.addEventListener('fetch', (event) => {
-  // Wir prüfen hier primär HTML-Anfragen (oder alle GET-Requests)
+  // Wir beantworten Anfragen primär aus dem Cache (schnell & funktioniert immer offline)
   event.respondWith(
-    (async () => {
-      try {
-        // Versuch 1: Testen, ob GitHub (oder eine externe Ressource) erreichbar ist
-        // Wir pingen eine leichte URL an (z.B. die GitHub-Startseite oder die eigene Domain)
-        const githubCheck = await fetch('https://github.com', { 
-          mode: 'no-cors', 
-          cache: 'no-store',
-          signal: AbortSignal.timeout(3000) // Timeout nach 3 Sekunden, falls das Portal hängt
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        // Optional: Im Hintergrund versuchen, die Datei zu aktualisieren, falls Netz da ist
+        fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse);
+            });
+          }
+        }).catch(() => {
+          // Ignorieren, wenn kein Netz da ist (wir sind ja offline / im Flugmodus)
         });
 
-        // Wenn GitHub erreichbar ist, versuchen wir die frischeste Version aus dem Netz zu laden
-        const networkResponse = await fetch(event.request);
-        return networkResponse;
-      } catch (error) {
-        // Entweder komplett offline ODER im Captive Portal gefangen (GitHub nicht erreichbar)
-        // -> Fallback auf den lokalen Cache!
-        const cachedResponse = await caches.match(event.request);
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        
-        // Falls auch nicht im Cache, Standard-Fehler werfen
-        throw error;
+        return cachedResponse;
       }
-    })()
+
+      // Falls die Datei nicht im Cache ist, ganz normal aus dem Netz laden
+      return fetch(event.request);
+    })
   );
 });
