@@ -1,6 +1,6 @@
 const CACHE_NAME = 'arbeitstage-v2';
 const ASSETS = [
-  'arbeitstage.html',
+  'index.html',
   'manifest.json',
   'icon-192.png',
   'favicon.svg'
